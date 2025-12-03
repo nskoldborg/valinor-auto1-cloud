@@ -4,7 +4,7 @@ from typing import Optional
 import httpx
 import os
 
-from backend.server.utils import auth_utils
+from backend.scr.services import auth_service
 
 router = APIRouter(prefix="/support", tags=["Support"])
 
@@ -34,7 +34,7 @@ class SupportTicketCreate(BaseModel):
 async def create_support_ticket(
     payload: SupportTicketCreate,
     request: Request,
-    current_user=Depends(auth_utils.get_current_user),
+    current_user=Depends(auth_service.get_current_user),
 
 ):
     """

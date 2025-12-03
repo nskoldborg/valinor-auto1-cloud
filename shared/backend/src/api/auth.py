@@ -3,9 +3,9 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from datetime import timedelta, datetime
 
-from backend.server.model.models_users import User
-from backend.server.utils import auth_utils
-from backend.server.utils.change_logger import log_scalar_change
+from backend.scr.models.models_users import User
+from backend.scr.services import auth_service
+from backend.scr.services.changelog_serivce import log_scalar_change
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -18,18 +18,18 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 def login(
     request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(),
-    db: Session = Depends(auth_utils.get_db),
+    db: Session = Depends(auth_service.get_db),
 ):
     """Authenticate a user and return a JWT access token."""
     user = db.query(User).filter(User.email == form_data.username).first()
 
-    if not user or not auth_utils.verify_password(form_data.password, user.password_hash):
+    if not user or not auth_service.verify_password(form_data.password, user.password_hash):
         raise HTTPException(status_code=400, detail="Invalid credentials")
 
     # --- Create token ---
-    token = auth_utils.create_access_token(
+    token = auth_service.create_access_token(
         data={"sub": str(user.id)},
-        expires_delta=timedelta(minutes=auth_utils.ACCESS_TOKEN_EXPIRE_MINUTES)
+        expires_delta=timedelta(minutes=auth_service.ACCESS_TOKEN_EXPIRE_MINUTES)
     )
 
     # --- Metadata ---
@@ -83,8 +83,8 @@ def login(
 def impersonate_user(
     target_user_id: int,
     request: Request,
-    db: Session = Depends(auth_utils.get_db),
-    current_user: User = Depends(auth_utils.get_current_user),
+    db: Session = Depends(auth_service.get_db),
+    current_user: User = Depends(auth_service.get_current_user),
 ):
     """
     Issue an impersonation token so an admin can 'assume identity' of another user.
@@ -94,7 +94,7 @@ def impersonate_user(
       - impersonated_by = current admin's id
     """
     # 1) Only allow certain roles (e.g. admin) to impersonate
-    auth_utils.require_role(current_user, ["admin"])  # adjust if you have super_admin etc.
+    auth_service.require_role(current_user, ["admin"])  # adjust if you have super_admin etc.
 
     # 2) Load target user
     target_user = db.query(User).filter(User.id == target_user_id).first()
@@ -102,7 +102,7 @@ def impersonate_user(
         raise HTTPException(status_code=404, detail="Target user not found")
 
     # Optional: Disallow impersonating other admins / self if you want stricter rules
-    # flattened_roles = auth_utils.get_user_roles(target_user)
+    # flattened_roles = auth_service.get_user_roles(target_user)
     # if "admin" in flattened_roles:
     #     raise HTTPException(status_code=403, detail="Cannot impersonate another admin")
 
@@ -110,13 +110,13 @@ def impersonate_user(
         raise HTTPException(status_code=400, detail="You are already this user")
 
     # 3) Create impersonation token
-    token = auth_utils.create_access_token(
+    token = auth_service.create_access_token(
         data={
             "sub": str(target_user.id),
             "impersonated": True,
             "impersonated_by": current_user.id,
         },
-        expires_delta=timedelta(minutes=auth_utils.ACCESS_TOKEN_EXPIRE_MINUTES),
+        expires_delta=timedelta(minutes=auth_service.ACCESS_TOKEN_EXPIRE_MINUTES),
     )
 
     # 4) Log impersonation as SYSTEM (or as admin – up to you)
@@ -165,16 +165,16 @@ def impersonate_user(
 
 @router.post("/impersonation/stop")
 def stop_impersonation(
-    db: Session = Depends(auth_utils.get_db),
-    ctx: auth_utils.AuthContext = Depends(auth_utils.get_auth_context),
+    db: Session = Depends(auth_service.get_db),
+    ctx: auth_service.AuthContext = Depends(auth_service.get_auth_context),
 ):
     if not ctx.is_impersonating or not ctx.original_user:
         raise HTTPException(status_code=400, detail="Not currently impersonating")
 
     # Issue a fresh token for the original user (admin)
-    token = auth_utils.create_access_token(
+    token = auth_service.create_access_token(
         data={"sub": str(ctx.original_user.id)},
-        expires_delta=timedelta(minutes=auth_utils.ACCESS_TOKEN_EXPIRE_MINUTES),
+        expires_delta=timedelta(minutes=auth_service.ACCESS_TOKEN_EXPIRE_MINUTES),
     )
 
     return {

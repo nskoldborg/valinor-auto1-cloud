@@ -4,9 +4,9 @@ from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
 
-from backend.server.model.models_users import User, UserRole
-from backend.server.utils import auth_utils
-from backend.server.utils.change_logger import log_scalar_change
+from backend.scr.models.models_users import User, UserRole
+from backend.scr.services import auth_service
+from backend.scr.services.changelog_service import log_scalar_change
 
 router = APIRouter(prefix="/roles", tags=["roles"])
 
@@ -37,7 +37,7 @@ class RoleOut(RoleBase):
 
 def _require_role(user: User, allowed: List[str]):
     """Ensure the user has at least one of the allowed roles, or is admin."""
-    roles = auth_utils.get_user_roles(user)
+    roles = auth_service.get_user_roles(user)
     if "admin" in roles:
         return
     if not any(role in roles for role in allowed):
@@ -50,8 +50,8 @@ def _require_role(user: User, allowed: List[str]):
 
 @router.get("/", response_model=List[RoleOut])
 def list_roles(
-    db: Session = Depends(auth_utils.get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    db: Session = Depends(auth_service.get_db),
+    current_user=Depends(auth_service.get_current_user),
 ):
     """
     Return roles visible to the current user:
@@ -60,7 +60,7 @@ def list_roles(
     """
     creator = aliased(User)
     updater = aliased(User)
-    effective_roles = auth_utils.get_user_roles(current_user)
+    effective_roles = auth_service.get_user_roles(current_user)
 
     query = (
         db.query(
@@ -120,8 +120,8 @@ def list_roles(
 @router.post("/create", response_model=RoleOut)
 def create_role(
     role: RoleBase,
-    db: Session = Depends(auth_utils.get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    db: Session = Depends(auth_service.get_db),
+    current_user=Depends(auth_service.get_current_user),
 ):
     """Create a new user role."""
     _require_role(current_user, ["route:roles#create"])
@@ -172,8 +172,8 @@ def create_role(
 @router.get("/{role_id}", response_model=RoleOut)
 def get_role(
     role_id: int,
-    db: Session = Depends(auth_utils.get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    db: Session = Depends(auth_service.get_db),
+    current_user=Depends(auth_service.get_current_user),
 ):
     """Return details for a specific role."""
     _require_role(current_user, ["route:roles", "route:groups#create", "route:groups#edit"])
@@ -220,8 +220,8 @@ def get_role(
 def edit_role(
     role_id: int,
     role_update: RoleBase,
-    db: Session = Depends(auth_utils.get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    db: Session = Depends(auth_service.get_db),
+    current_user=Depends(auth_service.get_current_user),
 ):
     """Edit an existing role."""
     _require_role(current_user, ["route:roles#edit"])

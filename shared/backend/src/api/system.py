@@ -3,10 +3,10 @@ from sqlalchemy.orm import Session
 from datetime import datetime
 from typing import List, Optional
 
-from backend.server.utils.auth_utils import get_db, get_current_user
-from backend.server.model.models_changelog import ChangeLog
-from backend.server.model.models_users import User, UserGroup, UserPosition
-from backend.server.utils.change_logger import log_scalar_change, log_list_field_changes
+from backend.scr.utils.auth_service import get_db, get_current_user
+from backend.scr.models.models_changelog import ChangeLog
+from backend.scr.models.models_users import User, UserGroup, UserPosition
+from backend.scr.services.changelog_service import log_scalar_change, log_list_field_changes
 
 router = APIRouter(prefix="/system", tags=["system"])
 

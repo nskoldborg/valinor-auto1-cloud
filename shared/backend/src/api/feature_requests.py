@@ -2,19 +2,18 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from datetime import datetime
 
-from backend.server.utils import auth_utils
-from backend.server.model.models_feature_requests import (
+from backend.scr.services import auth_service
+from backend.scr.models.models_feature_requests import (
     FeatureRequest,
     FeatureComment,
     FeatureRequestStatus,
     FeatureType,
     UpdateLevel,
 )
-from backend.server.model.models_release import ReleaseTrack, ReleaseHistory
-from backend.server.utils.semver_utils import bump_version
-from backend.server.utils.email_utils import send_email
-from backend.server.utils.release_email_template import build_release_email_html
-from backend.server.utils.change_logger import log_scalar_change
+from backend.scr.models.models_release import ReleaseTrack, ReleaseHistory
+from backend.scr.services.semver_utils import bump_version
+from backend.scr.services.email_service import send_email, build_release_email_html
+from backend.scr.services.changelog_serivce import log_scalar_change
 
 router = APIRouter(prefix="/feature-requests", tags=["feature-requests"])
 
@@ -56,10 +55,10 @@ def _generate_feature_id(db: Session, feature_type: FeatureType):
 
 @router.get("/")
 def list_feature_requests(
-    db: Session = Depends(auth_utils.get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    db: Session = Depends(auth_service.get_db),
+    current_user=Depends(auth_service.get_current_user),
 ):
-    auth_utils.require_role(current_user, ["route:product#features"])
+    auth_service.require_role(current_user, ["route:product#features"])
     features = db.query(FeatureRequest).order_by(FeatureRequest.created_at.desc()).all()
 
     return [
@@ -93,10 +92,10 @@ def list_feature_requests(
 @router.post("/")
 def create_feature_request(
     data: dict,
-    db: Session = Depends(auth_utils.get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    db: Session = Depends(auth_service.get_db),
+    current_user=Depends(auth_service.get_current_user),
 ):
-    auth_utils.require_role(current_user, ["route:product#features-create"])
+    auth_service.require_role(current_user, ["route:product#features-create"])
 
     try:
         feature_type = FeatureType(data["type"])
@@ -154,10 +153,10 @@ def create_feature_request(
 def add_comment(
     feature_id: str,
     data: dict,
-    db: Session = Depends(auth_utils.get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    db: Session = Depends(auth_service.get_db),
+    current_user=Depends(auth_service.get_current_user),
 ):
-    auth_utils.require_role(current_user, ["route:product#features-comment"])
+    auth_service.require_role(current_user, ["route:product#features-comment"])
     req = db.query(FeatureRequest).filter(FeatureRequest.feature_id == feature_id).first()
     if not req:
         raise HTTPException(status_code=404, detail="Feature request not found")
@@ -213,10 +212,10 @@ def add_comment(
 @router.get("/{feature_id}")
 def get_feature_request(
     feature_id: str,
-    db: Session = Depends(auth_utils.get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    db: Session = Depends(auth_service.get_db),
+    current_user=Depends(auth_service.get_current_user),
 ):
-    auth_utils.require_role(current_user, ["route:product#features"])
+    auth_service.require_role(current_user, ["route:product#features"])
     req = db.query(FeatureRequest).filter(FeatureRequest.feature_id == feature_id).first()
     if not req:
         raise HTTPException(status_code=404, detail="Feature request not found")
@@ -267,10 +266,10 @@ def get_feature_request(
 def update_feature_work(
     feature_id: str,
     data: dict,
-    db: Session = Depends(auth_utils.get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    db: Session = Depends(auth_service.get_db),
+    current_user=Depends(auth_service.get_current_user),
 ):
-    auth_utils.require_role(current_user, ["route:product#features-edit"])
+    auth_service.require_role(current_user, ["route:product#features-edit"])
     req = db.query(FeatureRequest).filter(FeatureRequest.feature_id == feature_id).first()
     if not req:
         raise HTTPException(status_code=404, detail="Feature request not found")
@@ -353,10 +352,10 @@ def update_feature_work(
 def release_feature(
     feature_id: str,
     data: dict,
-    db: Session = Depends(auth_utils.get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    db: Session = Depends(auth_service.get_db),
+    current_user=Depends(auth_service.get_current_user),
 ):
-    auth_utils.require_role(current_user, ["route:product#features-release"])
+    auth_service.require_role(current_user, ["route:product#features-release"])
 
     req = db.query(FeatureRequest).filter(FeatureRequest.feature_id == feature_id).first()
     if not req:
@@ -458,10 +457,10 @@ def release_feature(
 def delete_comment(
     feature_id: str,
     comment_id: int,
-    db: Session = Depends(auth_utils.get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    db: Session = Depends(auth_service.get_db),
+    current_user=Depends(auth_service.get_current_user),
 ):
-    auth_utils.require_role(current_user, ["route:product#features-comment-delete"])
+    auth_service.require_role(current_user, ["route:product#features-comment-delete"])
 
     feature = db.query(FeatureRequest).filter(FeatureRequest.feature_id == feature_id).first()
     if not feature:
@@ -501,14 +500,14 @@ def delete_comment(
 def reopen_feature_request(
     feature_id: str,
     data: dict | None = None,
-    db: Session = Depends(auth_utils.get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    db: Session = Depends(auth_service.get_db),
+    current_user=Depends(auth_service.get_current_user),
 ):
     """
     Reopens a feature request that was previously released or rejected.
     Optionally accepts a comment or reason field for context.
     """
-    auth_utils.require_role(current_user, ["route:product#features-edit"])
+    auth_service.require_role(current_user, ["route:product#features-edit"])
 
     req = db.query(FeatureRequest).filter(FeatureRequest.feature_id == feature_id).first()
     if not req:

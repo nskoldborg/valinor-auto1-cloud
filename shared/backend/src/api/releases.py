@@ -3,10 +3,10 @@ from sqlalchemy.orm import Session
 from datetime import datetime
 from typing import Optional
 
-from backend.server.utils import auth_utils
-from backend.server.model.models_release import ReleaseTrack
-from backend.server.utils.semver_utils import bump_version
-from backend.server.utils.change_logger import log_scalar_change
+from backend.scr.services import auth_service
+from backend.scr.models.models_release import ReleaseTrack
+from backend.scr.services.semver_utils import bump_version
+from backend.scr.services.changelog_service import log_scalar_change
 
 router = APIRouter(prefix="/releases", tags=["releases"])
 
@@ -18,14 +18,14 @@ router = APIRouter(prefix="/releases", tags=["releases"])
 @router.get("/{key}")
 def get_release_track(
     key: str,
-    db: Session = Depends(auth_utils.get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    db: Session = Depends(auth_service.get_db),
+    current_user=Depends(auth_service.get_current_user),
 ):
     """
     Retrieve or initialize a release track for a specific feature/product.
     If not found, initializes it at version 0.0.0.
     """
-    auth_utils.require_role(current_user, ["route:product#features"])
+    auth_service.require_role(current_user, ["route:product#features"])
 
     rt = db.query(ReleaseTrack).filter(ReleaseTrack.key == key).first()
     if not rt:
@@ -68,8 +68,8 @@ def get_release_track(
 def bump_release_track(
     key: str,
     data: dict,
-    db: Session = Depends(auth_utils.get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    db: Session = Depends(auth_service.get_db),
+    current_user=Depends(auth_service.get_current_user),
 ):
     """
     Apply and log a new version bump for a release track.
@@ -78,7 +78,7 @@ def bump_release_track(
         "update_level": "major|minor|patch"
     }
     """
-    auth_utils.require_role(current_user, ["route:product#features"])
+    auth_service.require_role(current_user, ["route:product#features"])
 
     update_level = (data.get("update_level") or "patch").lower()
 
@@ -151,7 +151,7 @@ def bump_release_track(
 def system_bump_release_track(
     key: str,
     update_level: str = "patch",
-    db: Session = Depends(auth_utils.get_db),
+    db: Session = Depends(auth_service.get_db),
 ):
     """
     Used by automated CI/CD or cron jobs to bump release versions.

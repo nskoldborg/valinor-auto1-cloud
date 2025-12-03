@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, Boolean, Date, DateTime, Text, Float
 from datetime import datetime
-from backend.server.model.database import Base
+from backend.scr.models.database import Base
 
 # ============================================================
 # 🧩 EmployeeBase — target table for Workday data

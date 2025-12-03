@@ -10,17 +10,17 @@ regardless of which file the model is defined in.
 """
 
 # Shared declarative Base and metadata
-from backend.server.model.base import Base
+from backend.scr.models.base import Base
 
 # Import all model modules so SQLAlchemy registers them
-from backend.server.model.models_analytics import *
-from backend.server.model.models_users import *
-from backend.server.model.models_tasks import *
-from backend.server.model.models_feature_requests import *
-from backend.server.model.models_batch_uploader import EmployeeBase, BatchUploadLog
-from backend.server.model.models_release import *
-from backend.server.model.models_position_requests import *
-from backend.server.model.models_changelog import ChangeLog  # ✅ ensure ChangeLog model is imported
+from backend.scr.models.models_analytics import *
+from backend.scr.models.models_users import *
+from backend.scr.models.models_tasks import *
+from backend.scr.models.models_feature_requests import *
+from backend.scr.models.models_batch_uploader import EmployeeBase, BatchUploadLog
+from backend.scr.models.models_release import *
+from backend.scr.models.models_position_requests import *
+from backend.scr.models.models_changelog import ChangeLog  # ✅ ensure ChangeLog model is imported
 
 # Explicitly define what should be accessible when importing `server.model`
 __all__ = [

@@ -1,12 +1,9 @@
 import sys, os
 from sqlalchemy import text
 
-# Ensure backend/ is on sys.path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-
-from backend.server.model import Base
-from backend.server.model.database import engine
-from backend.server.modules.seed import seed
+from backend.scr.models import Base
+from backend.scr.models.database import engine
+from backend.scr.services.seed_service import seed
 
 def drop_all_tables_cascade(engine, schema: str):
     """

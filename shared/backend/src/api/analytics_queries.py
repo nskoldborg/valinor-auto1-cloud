@@ -6,9 +6,9 @@ from datetime import datetime
 import time
 import psycopg2
 
-from backend.server.model.database import get_db
-from backend.server.model.models_analytics import Query, DataSource, Tag
-from backend.server.utils import auth_utils, crypto
+from backend.scr.models.database import get_db
+from backend.scr.models.models_analytics import Query, DataSource, Tag
+from backend.scr.services import auth_service, crypto
 
 router = APIRouter(
     prefix="/analytics/queries",
@@ -69,7 +69,7 @@ def get_or_create_tags(db: Session, tag_names: List[str]) -> List[Tag]:
 @router.get("/", response_model=List[QueryOut])
 def list_queries(
     db: Session = Depends(get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    current_user=Depends(auth_service.get_current_user),
 ):
     """Return all non-archived queries."""
     queries = (
@@ -104,7 +104,7 @@ def list_queries(
 def create_query(
     payload: QueryCreate,
     db: Session = Depends(get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    current_user=Depends(auth_service.get_current_user),
 ):
     """Create a new analytics query."""
     if payload.datasource_id:
@@ -149,7 +149,7 @@ def create_query(
 def execute_query(
     query_id: int,
     db: Session = Depends(get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    current_user=Depends(auth_service.get_current_user),
 ):
     """Executes a saved query, using cached results if available."""
     q = db.query(Query).filter(Query.id == query_id).first()
@@ -236,7 +236,7 @@ def execute_query(
 def delete_query(
     query_id: int,
     db: Session = Depends(get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    current_user=Depends(auth_service.get_current_user),
 ):
     """Delete a query (hard delete)."""
     q = db.query(Query).filter(Query.id == query_id).first()

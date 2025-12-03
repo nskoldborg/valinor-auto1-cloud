@@ -4,9 +4,9 @@ from typing import List, Optional
 from pydantic import BaseModel
 from datetime import datetime
 
-from backend.server.model.models_users import User, UserRole, UserGroup
-from backend.server.utils import auth_utils
-from backend.server.utils.change_logger import log_scalar_change, log_list_field_changes
+from backend.scr.models.models_users import User, UserRole, UserGroup
+from backend.scr.services import auth_service
+from backend.scr.services.changelog_service import log_scalar_change, log_list_field_changes
 
 router = APIRouter(prefix="/groups", tags=["groups"])
 
@@ -60,7 +60,7 @@ class GroupUpdate(BaseModel):
 
 def _require_role(user: User, allowed: list[str]):
     """Ensure the user has at least one of the allowed roles, or is admin."""
-    roles = auth_utils.get_user_roles(user)
+    roles = auth_service.get_user_roles(user)
     if "admin" in roles:
         return
     if not any(role in roles for role in allowed):
@@ -73,8 +73,8 @@ def _require_role(user: User, allowed: list[str]):
 
 @router.get("/", response_model=List[GroupOut])
 def list_groups(
-    db: Session = Depends(auth_utils.get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    db: Session = Depends(auth_service.get_db),
+    current_user=Depends(auth_service.get_current_user),
 ):
     """List all groups with assigned roles and audit metadata."""
 
@@ -106,8 +106,8 @@ def list_groups(
 @router.get("/{group_id}", response_model=GroupOut)
 def get_group(
     group_id: int,
-    db: Session = Depends(auth_utils.get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    db: Session = Depends(auth_service.get_db),
+    current_user=Depends(auth_service.get_current_user),
 ):
     """Fetch details for a single group."""
     _require_role(current_user, ["route:groups", "route:groups#view"])
@@ -141,8 +141,8 @@ def get_group(
 @router.post("/", response_model=GroupOut)
 def create_group(
     group: GroupCreate,
-    db: Session = Depends(auth_utils.get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    db: Session = Depends(auth_service.get_db),
+    current_user=Depends(auth_service.get_current_user),
 ):
     """Create a new group."""
     _require_role(current_user, ["route:groups#create"])
@@ -208,8 +208,8 @@ def create_group(
 def update_group(
     group_id: int,
     group_update: GroupUpdate,
-    db: Session = Depends(auth_utils.get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    db: Session = Depends(auth_service.get_db),
+    current_user=Depends(auth_service.get_current_user),
 ):
     """Update group details and assigned roles."""
     _require_role(current_user, ["route:groups#edit"])
@@ -282,8 +282,8 @@ def update_group(
 @router.delete("/{group_id}")
 def delete_group(
     group_id: int,
-    db: Session = Depends(auth_utils.get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    db: Session = Depends(auth_service.get_db),
+    current_user=Depends(auth_service.get_current_user),
 ):
     """Delete a group."""
     _require_role(current_user, ["route:admin-actions#delete-groups"])

@@ -3,9 +3,9 @@ from sqlalchemy.orm import Session
 from datetime import datetime
 from typing import List
 
-from backend.server.utils import auth_utils
-from backend.server.model.models_position_requests import PositionUpdateRequest
-from backend.server.model.schemas.position_requests import (
+from backend.scr.services import auth_service
+from backend.scr.models.models_position_requests import PositionUpdateRequest
+from backend.scr.models.schemas.position_requests import (
     PositionUpdateRequestCreate,
     PositionUpdateRequestUpdate,
     PositionUpdateRequestApproval,
@@ -28,8 +28,8 @@ def generate_request_id(db: Session) -> str:
 # ------------------------------------------------------------
 @router.get("/", response_model=List[PositionUpdateRequestRead])
 def list_position_requests(
-    db: Session = Depends(auth_utils.get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    db: Session = Depends(auth_service.get_db),
+    current_user=Depends(auth_service.get_current_user),
 ):
     return (
         db.query(PositionUpdateRequest)
@@ -44,8 +44,8 @@ def list_position_requests(
 @router.get("/{request_id}", response_model=PositionUpdateRequestRead)
 def get_position_request(
     request_id: str,
-    db: Session = Depends(auth_utils.get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    db: Session = Depends(auth_service.get_db),
+    current_user=Depends(auth_service.get_current_user),
 ):
     request = db.query(PositionUpdateRequest).filter_by(request_id=request_id).first()
     if not request:
@@ -59,8 +59,8 @@ def get_position_request(
 @router.post("/", response_model=PositionUpdateRequestRead)
 def create_position_request(
     payload: PositionUpdateRequestCreate,
-    db: Session = Depends(auth_utils.get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    db: Session = Depends(auth_service.get_db),
+    current_user=Depends(auth_service.get_current_user),
 ):
     new_request = PositionUpdateRequest(
         request_id=generate_request_id(db),
@@ -85,8 +85,8 @@ def create_position_request(
 def update_position_request(
     request_id: str,
     payload: PositionUpdateRequestUpdate,
-    db: Session = Depends(auth_utils.get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    db: Session = Depends(auth_service.get_db),
+    current_user=Depends(auth_service.get_current_user),
 ):
     request = db.query(PositionUpdateRequest).filter_by(request_id=request_id).first()
     if not request:
@@ -120,8 +120,8 @@ def update_position_request(
 def approve_position_request(
     request_id: str,
     payload: PositionUpdateRequestApproval,
-    db: Session = Depends(auth_utils.get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    db: Session = Depends(auth_service.get_db),
+    current_user=Depends(auth_service.get_current_user),
 ):
     request = db.query(PositionUpdateRequest).filter_by(request_id=request_id).first()
     if not request:

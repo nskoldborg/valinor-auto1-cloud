@@ -12,7 +12,7 @@ from sqlalchemy import (
     Float
 )
 from sqlalchemy.orm import relationship
-from backend.server.model.base import Base
+from backend.scr.models.base import Base
 
 
 # ============================================================

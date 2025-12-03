@@ -1,8 +1,8 @@
 from datetime import datetime
 from sqlalchemy.orm import Session
-from backend.server.model.models_users import User, UserGroup, UserPosition
-from backend.server.utils.auth_utils import get_db
-from backend.server.model.models_changelog import ChangeLog
+from backend.scr.models.models_users import User, UserGroup, UserPosition
+from backend.scr.services.auth_service import get_db
+from backend.scr.models.models_changelog import ChangeLog
 
 def log_matrix_change(db: Session, user_id: int, old_group_names: list[str], new_group_names: list[str]):
     """Store a changelog record for auditing."""

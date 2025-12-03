@@ -1,7 +1,7 @@
 # server/model/models_release.py
 from sqlalchemy import Column, Integer, String, DateTime, func, UniqueConstraint, ForeignKey
 from sqlalchemy.orm import relationship
-from backend.server.model.base import Base  # your declarative base
+from backend.scr.models.base import Base  # your declarative base
 
 class ReleaseTrack(Base):
     __tablename__ = "release_tracks"

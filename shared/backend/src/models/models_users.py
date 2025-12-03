@@ -11,8 +11,8 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.associationproxy import association_proxy
 
-from backend.server.model.base import Base
-from backend.server.model.models_analytics import query_favorites_table
+from backend.scr.models.base import Base
+from backend.scr.models.models_analytics import query_favorites_table
 
 # ============================================================
 # Association Tables

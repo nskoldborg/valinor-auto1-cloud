@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse
 import subprocess
 from pathlib import Path
 
-from backend.server.utils.auth_utils import get_current_user
+from backend.scr.services.auth_service import get_current_user
 
 router = APIRouter(
     prefix="/system/scripts",

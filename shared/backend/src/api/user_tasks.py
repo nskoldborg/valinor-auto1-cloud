@@ -5,10 +5,10 @@ from datetime import datetime
 from typing import List, Optional
 from pydantic import BaseModel
 
-from backend.server.model.models_users import User
-from backend.server.model.models_tasks import UserTask, TaskSource
-from backend.server.utils import auth_utils
-from backend.server.utils.change_logger import log_scalar_change
+from backend.scr.models.models_users import User
+from backend.scr.models.models_tasks import UserTask, TaskSource
+from backend.scr.services import auth_service
+from backend.scr.services.changelog_service import log_scalar_change
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
 
@@ -42,7 +42,7 @@ class TaskOut(TaskBase):
 
 def _require_role(user: User, allowed: List[str]):
     """Ensure user has at least one allowed role or admin."""
-    roles = auth_utils.get_user_roles(user)
+    roles = auth_service.get_user_roles(user)
     if "admin" in roles:
         return
     if not any(r in roles for r in allowed):
@@ -56,8 +56,8 @@ def _require_role(user: User, allowed: List[str]):
 @router.get("/", response_model=List[TaskOut])
 def list_tasks(
     include_team: bool = False,
-    db: Session = Depends(auth_utils.get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    db: Session = Depends(auth_service.get_db),
+    current_user=Depends(auth_service.get_current_user),
 ):
     """List tasks for current user or team."""
     _require_role(current_user, ["route:tasks#view"])
@@ -93,8 +93,8 @@ def list_tasks(
 @router.post("/", response_model=TaskOut)
 def create_task(
     task: TaskBase,
-    db: Session = Depends(auth_utils.get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    db: Session = Depends(auth_service.get_db),
+    current_user=Depends(auth_service.get_current_user),
 ):
     """Manually create a task (logged)."""
     _require_role(current_user, ["route:tasks#create"])
@@ -141,7 +141,7 @@ def create_system_task(
     assigned_to: int,
     source: TaskSource,
     reference_id: Optional[str] = None,
-    db: Session = Depends(auth_utils.get_db),
+    db: Session = Depends(auth_service.get_db),
 ):
     """Create system-generated task (actor = SYSTEM)."""
     new_task = UserTask(
@@ -182,15 +182,15 @@ def create_system_task(
 @router.put("/{task_id}/complete", response_model=TaskOut)
 def complete_task(
     task_id: int,
-    db: Session = Depends(auth_utils.get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    db: Session = Depends(auth_service.get_db),
+    current_user=Depends(auth_service.get_current_user),
 ):
     """Mark a task as completed (logs change)."""
     task = db.query(UserTask).filter(UserTask.id == task_id).first()
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
 
-    if task.assigned_to != current_user.id and "admin" not in auth_utils.get_user_roles(current_user):
+    if task.assigned_to != current_user.id and "admin" not in auth_service.get_user_roles(current_user):
         raise HTTPException(status_code=403, detail="Not allowed")
 
     task.completed = True
@@ -219,8 +219,8 @@ def complete_task(
 
 @router.get("/next", response_model=TaskOut)
 def get_next_task(
-    db: Session = Depends(auth_utils.get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    db: Session = Depends(auth_service.get_db),
+    current_user=Depends(auth_service.get_current_user),
 ):
     """
     Return next prioritized task for current user.
@@ -288,8 +288,8 @@ def get_next_task(
 @router.put("/{task_id}/accept", response_model=TaskOut)
 def accept_task(
     task_id: int,
-    db: Session = Depends(auth_utils.get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    db: Session = Depends(auth_service.get_db),
+    current_user=Depends(auth_service.get_current_user),
 ):
     """Accept task (reaffirm ownership)."""
     task = db.query(UserTask).filter(UserTask.id == task_id).first()
@@ -325,15 +325,15 @@ def accept_task(
 @router.put("/{task_id}/skip", response_model=dict)
 def skip_task(
     task_id: int,
-    db: Session = Depends(auth_utils.get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    db: Session = Depends(auth_service.get_db),
+    current_user=Depends(auth_service.get_current_user),
 ):
     """Skip task (unassign for others to take)."""
     task = db.query(UserTask).filter(UserTask.id == task_id).first()
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
 
-    if task.assigned_to != current_user.id and "admin" not in auth_utils.get_user_roles(current_user):
+    if task.assigned_to != current_user.id and "admin" not in auth_service.get_user_roles(current_user):
         raise HTTPException(status_code=403, detail="Not allowed")
 
     prev_user = task.assigned_to

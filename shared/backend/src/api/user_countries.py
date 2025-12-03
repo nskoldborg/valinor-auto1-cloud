@@ -4,9 +4,9 @@ from datetime import datetime
 from pydantic import BaseModel
 from typing import Optional, List
 
-from backend.server.model.models_users import User, UserCountry
-from backend.server.utils import auth_utils
-from backend.server.utils.change_logger import log_scalar_change
+from backend.scr.models.models_users import User, UserCountry
+from backend.scr.services import auth_service
+from backend.scr.services.changelog_service import log_scalar_change
 
 router = APIRouter(prefix="/countries", tags=["countries"])
 
@@ -38,7 +38,7 @@ class CountryOut(CountryBase):
 
 def _require_role(user: User, allowed: List[str]):
     """Ensure the user has at least one of the allowed roles, or is admin."""
-    roles = auth_utils.get_user_roles(user)
+    roles = auth_service.get_user_roles(user)
     if "admin" in roles:
         return
     if not any(role in roles for role in allowed):
@@ -51,8 +51,8 @@ def _require_role(user: User, allowed: List[str]):
 
 @router.get("/", response_model=List[CountryOut])
 def list_countries(
-    db: Session = Depends(auth_utils.get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    db: Session = Depends(auth_service.get_db),
+    current_user=Depends(auth_service.get_current_user),
 ):
     """List all countries."""
 
@@ -90,8 +90,8 @@ def list_countries(
 @router.post("/create", response_model=CountryOut)
 def create_country(
     country: CountryBase,
-    db: Session = Depends(auth_utils.get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    db: Session = Depends(auth_service.get_db),
+    current_user=Depends(auth_service.get_current_user),
 ):
     """Create a new country."""
     _require_role(current_user, ["route:countries#create"])
@@ -143,8 +143,8 @@ def create_country(
 def update_country(
     country_id: int,
     country_update: CountryBase,
-    db: Session = Depends(auth_utils.get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    db: Session = Depends(auth_service.get_db),
+    current_user=Depends(auth_service.get_current_user),
 ):
     """Update an existing country."""
     _require_role(current_user, ["route:countries#edit"])
@@ -227,8 +227,8 @@ def update_country(
 @router.delete("/{country_id}")
 def delete_country(
     country_id: int,
-    db: Session = Depends(auth_utils.get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    db: Session = Depends(auth_service.get_db),
+    current_user=Depends(auth_service.get_current_user),
 ):
     """Delete a country."""
     _require_role(current_user, ["route:admin-actions#delete-countries"])

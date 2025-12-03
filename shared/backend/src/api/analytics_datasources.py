@@ -7,9 +7,9 @@ import sqlalchemy as sa
 import socket
 import psycopg2
 
-from backend.server.model.database import get_db
-from backend.server.model.models_analytics import DataSource
-from backend.server.utils import crypto, auth_utils  # ✅ unified import
+from backend.scr.models.database import get_db
+from backend.scr.models.models_analytics import DataSource
+from backend.scr.services import crypto, auth_service  # ✅ unified import
 
 router = APIRouter(
     prefix="/analytics/resources",
@@ -99,7 +99,7 @@ def test_postgres_connection(ds: DataSourceBase):
 @router.get("/", response_model=List[DataSourceOut])
 def list_datasources(
     db: Session = Depends(get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    current_user=Depends(auth_service.get_current_user),
 ):
     return db.query(DataSource).order_by(DataSource.name.asc()).all()
 
@@ -108,7 +108,7 @@ def list_datasources(
 def get_datasource(
     datasource_id: int,
     db: Session = Depends(get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    current_user=Depends(auth_service.get_current_user),
 ):
     ds = db.query(DataSource).filter(DataSource.id == datasource_id).first()
     if not ds:
@@ -119,7 +119,7 @@ def get_datasource(
 @router.post("/test")
 def test_datasource_connection(
     payload: DataSourceBase,
-    current_user=Depends(auth_utils.get_current_user),
+    current_user=Depends(auth_service.get_current_user),
 ):
     if payload.type.lower() not in ["postgres", "postgresql"]:
         raise HTTPException(
@@ -141,7 +141,7 @@ def test_datasource_connection(
 def test_existing_datasource_connection(
     datasource_id: int,
     db: Session = Depends(get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    current_user=Depends(auth_service.get_current_user),
 ):
     ds = db.query(DataSource).filter(DataSource.id == datasource_id).first()
     if not ds:
@@ -185,7 +185,7 @@ def test_existing_datasource_connection(
 def create_datasource(
     payload: DataSourceCreate,
     db: Session = Depends(get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    current_user=Depends(auth_service.get_current_user),
 ):
     if payload.type.lower() not in ["postgres", "postgresql"]:
         raise HTTPException(status_code=400, detail="Only PostgreSQL connections are supported at this time.")
@@ -226,7 +226,7 @@ def update_datasource(
     datasource_id: int,
     payload: DataSourceUpdate,
     db: Session = Depends(get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    current_user=Depends(auth_service.get_current_user),
 ):
     ds = db.query(DataSource).filter(DataSource.id == datasource_id).first()
     if not ds:
@@ -264,7 +264,7 @@ def update_datasource(
 def delete_datasource(
     datasource_id: int,
     db: Session = Depends(get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    current_user=Depends(auth_service.get_current_user),
 ):
     ds = db.query(DataSource).filter(DataSource.id == datasource_id).first()
     if not ds:
@@ -278,7 +278,7 @@ def delete_datasource(
 def get_schema(
     datasource_id: int,
     db: Session = Depends(get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    current_user=Depends(auth_service.get_current_user),
 ):
     ds = db.query(DataSource).filter(DataSource.id == datasource_id).first()
     if not ds:
@@ -345,7 +345,7 @@ def execute_query(
     datasource_id: int,
     payload: QueryPayload,  # ✅ use Pydantic model
     db: Session = Depends(get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    current_user=Depends(auth_service.get_current_user),
 ):
     ds = db.query(DataSource).filter(DataSource.id == datasource_id).first()
     if not ds:

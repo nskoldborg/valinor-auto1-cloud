@@ -13,7 +13,7 @@ from sqlalchemy.orm import relationship, validates
 from datetime import datetime
 import enum
 
-from backend.server.model.base import Base
+from backend.scr.models.base import Base
 
 
 # ============================================================

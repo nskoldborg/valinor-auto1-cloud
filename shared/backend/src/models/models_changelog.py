@@ -4,7 +4,7 @@ from datetime import datetime
 from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 
-from backend.server.model.base import Base
+from backend.scr.models.base import Base
 
 
 class ChangeLog(Base):

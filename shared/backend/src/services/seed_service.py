@@ -169,7 +169,7 @@ def seed():
                 first_name="System",
                 last_name="Admin",
                 email="admin@example.com",
-                password_hash=auth_utils.get_password_hash("admin123"),
+                password_hash=auth_service.get_password_hash("admin123"),
                 status=True,
                 country="SE",
                 created_at=datetime.utcnow(),

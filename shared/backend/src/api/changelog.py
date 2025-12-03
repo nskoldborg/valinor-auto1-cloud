@@ -2,9 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, aliased
 from typing import List
 
-from backend.server.model.models_users import User
-from backend.server.model.models_changelog import ChangeLog
-from backend.server.utils import auth_utils
+from backend.scr.models.models_users import User
+from backend.scr.models.models_changelog import ChangeLog
+from backend.scr.services import auth_service
 
 router = APIRouter(prefix="/changelog", tags=["changelog"])
 
@@ -15,7 +15,7 @@ router = APIRouter(prefix="/changelog", tags=["changelog"])
 
 def _require_role(user: User, allowed: list[str]):
     """Ensure the user has at least one of the allowed roles, or is admin."""
-    roles = auth_utils.get_user_roles(user)
+    roles = auth_service.get_user_roles(user)
     if "admin" in roles:
         return
     if not any(role in roles for role in allowed):
@@ -64,8 +64,8 @@ def _serialize_log_entry(log: ChangeLog, db: Session | None = None):
 @router.get("/user/{user_id}", response_model=List[dict])
 def get_user_changelog(
     user_id: int,
-    db: Session = Depends(auth_utils.get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    db: Session = Depends(auth_service.get_db),
+    current_user=Depends(auth_service.get_current_user),
 ):
     """
     Get all changelog entries that affected a specific user (object_type='User', object_id=user_id).
@@ -85,8 +85,8 @@ def get_user_changelog(
 @router.get("/actor/{actor_id}", response_model=List[dict])
 def get_actor_changelog(
     actor_id: int,
-    db: Session = Depends(auth_utils.get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    db: Session = Depends(auth_service.get_db),
+    current_user=Depends(auth_service.get_current_user),
 ):
     """
     Get all changelog entries performed by a specific actor (created_by == actor_id).
@@ -106,8 +106,8 @@ def get_actor_changelog(
 
 @router.get("/", response_model=List[dict])
 def list_all_changelog(
-    db: Session = Depends(auth_utils.get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    db: Session = Depends(auth_service.get_db),
+    current_user=Depends(auth_service.get_current_user),
     object_type: str | None = None,
     limit: int = 100,
 ):

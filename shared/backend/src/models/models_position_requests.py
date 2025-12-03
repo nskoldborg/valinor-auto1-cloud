@@ -9,7 +9,7 @@ from sqlalchemy import (
     func,
 )
 from sqlalchemy.orm import relationship
-from backend.server.model.base import Base
+from backend.scr.models.base import Base
 
 
 class PositionUpdateRequest(Base):

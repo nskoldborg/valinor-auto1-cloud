@@ -6,10 +6,10 @@ from pydantic import BaseModel
 from datetime import datetime
 import secrets
 
-from backend.server.model.models_users import User
-from backend.server.model.models_changelog import ChangeLog
-from backend.server.utils import auth_utils
-from backend.server.model.base import Base
+from backend.scr.models.models_users import User
+from backend.scr.models.models_changelog import ChangeLog
+from backend.scr.services import auth_service
+from backend.scr.models.base import Base
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 
@@ -62,7 +62,7 @@ class APIKeyOut(BaseModel):
 # ============================================================
 
 def _require_role(user: User, allowed: list[str]):
-    roles = auth_utils.get_user_roles(user)
+    roles = auth_service.get_user_roles(user)
     if "admin" in roles:
         return
     if not any(role in roles for role in allowed):
@@ -110,11 +110,11 @@ def _log_change(
 
 @router.get("/", response_model=list[APIKeyOut])
 def list_api_keys(
-    db: Session = Depends(auth_utils.get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    db: Session = Depends(auth_service.get_db),
+    current_user=Depends(auth_service.get_current_user),
 ):
     """Admins see all keys; others see only their own."""
-    roles = auth_utils.get_user_roles(current_user)
+    roles = auth_service.get_user_roles(current_user)
 
     query = db.query(APIKey)
     if "admin" not in roles:
@@ -139,15 +139,15 @@ def list_api_keys(
 @router.get("/user/{user_id}", response_model=list[APIKeyOut])
 def list_api_keys_by_user(
     user_id: int,
-    db: Session = Depends(auth_utils.get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    db: Session = Depends(auth_service.get_db),
+    current_user=Depends(auth_service.get_current_user),
 ):
     """
     Return API keys for a specific user.
     - Users can view their own.
     - Admins or users with `route:users#admin-view-users-api-keys` can view others.
     """
-    roles = auth_utils.get_user_roles(current_user)
+    roles = auth_service.get_user_roles(current_user)
 
     if (
         current_user.id != user_id
@@ -180,8 +180,8 @@ def list_api_keys_by_user(
 @router.post("/create")
 def create_api_key(
     key_in: APIKeyBase,
-    db: Session = Depends(auth_utils.get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    db: Session = Depends(auth_service.get_db),
+    current_user=Depends(auth_service.get_current_user),
 ):
     """Create a new API key for the current user."""
     _require_role(current_user, ["route:api-keys#create"])
@@ -227,14 +227,14 @@ def create_api_key(
 @router.put("/{key_id}/enable", response_model=APIKeyOut)
 def enable_api_key(
     key_id: int,
-    db: Session = Depends(auth_utils.get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    db: Session = Depends(auth_service.get_db),
+    current_user=Depends(auth_service.get_current_user),
 ):
     """Enable (reactivate) a disabled API key."""
     _require_role(current_user, ["route:api-keys#suspend"])
 
     query = db.query(APIKey)
-    if "admin" not in auth_utils.get_user_roles(current_user):
+    if "admin" not in auth_service.get_user_roles(current_user):
         query = query.filter(APIKey.user_id == current_user.id)
 
     api_key = query.filter(APIKey.id == key_id).first()
@@ -270,14 +270,14 @@ def enable_api_key(
 @router.put("/{key_id}/disable", response_model=APIKeyOut)
 def disable_api_key(
     key_id: int,
-    db: Session = Depends(auth_utils.get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    db: Session = Depends(auth_service.get_db),
+    current_user=Depends(auth_service.get_current_user),
 ):
     """Suspend (deactivate) an API key."""
     _require_role(current_user, ["route:api-keys#suspend"])
 
     query = db.query(APIKey)
-    if "admin" not in auth_utils.get_user_roles(current_user):
+    if "admin" not in auth_service.get_user_roles(current_user):
         query = query.filter(APIKey.user_id == current_user.id)
 
     api_key = query.filter(APIKey.id == key_id).first()
@@ -313,14 +313,14 @@ def disable_api_key(
 @router.delete("/{key_id}")
 def delete_api_key(
     key_id: int,
-    db: Session = Depends(auth_utils.get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    db: Session = Depends(auth_service.get_db),
+    current_user=Depends(auth_service.get_current_user),
 ):
     """Delete an API key."""
     _require_role(current_user, ["route:api-keys#delete"])
 
     query = db.query(APIKey)
-    if "admin" not in auth_utils.get_user_roles(current_user):
+    if "admin" not in auth_service.get_user_roles(current_user):
         query = query.filter(APIKey.user_id == current_user.id)
 
     api_key = query.filter(APIKey.id == key_id).first()

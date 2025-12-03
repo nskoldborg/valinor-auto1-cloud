@@ -1,8 +1,8 @@
 from datetime import datetime
 from sqlalchemy.orm import Session
-from backend.server.model.models_tasks import UserTask, TaskSource
-from backend.server.model.models_users import User
-from backend.server.utils import auth_utils  # ✅ correct import
+from backend.scr.models.models_tasks import UserTask, TaskSource
+from backend.scr.models.models_users import User
+from backend.scr.services import auth_service  # ✅ correct import
 
 def generate_onboarding_offboarding_tasks():
     """
@@ -10,7 +10,7 @@ def generate_onboarding_offboarding_tasks():
     For now: placeholder that logs a message.
     """
     # ✅ Get a DB session the same way your app does
-    db_gen = auth_utils.get_db()
+    db_gen = auth_service.get_db()
     db: Session = next(db_gen)
 
     try:

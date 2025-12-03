@@ -5,8 +5,8 @@ import io
 import time
 from datetime import datetime
 
-from backend.server.utils import auth_utils
-from backend.server.model.models_batch_uploader import EmployeeBase, BatchUploadLog
+from backend.scr.services import auth_service
+from backend.scr.models.models_batch_uploader import EmployeeBase, BatchUploadLog
 
 router = APIRouter(prefix="/batch-upload", tags=["batch-uploader"])
 
@@ -76,11 +76,11 @@ def validate_dataframe(df, required_columns):
 @router.post("/workday")
 def upload_workday_file(
     file: UploadFile = File(...),
-    db: Session = Depends(auth_utils.get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    db: Session = Depends(auth_service.get_db),
+    current_user=Depends(auth_service.get_current_user),
 ):
     """Upload and upsert Workday employee data, with detailed logging."""
-    auth_utils.require_role(current_user, ["route:batch-uploader#workday-uploader"])
+    auth_service.require_role(current_user, ["route:batch-uploader#workday-uploader"])
 
     uploader_name = "workday"
     file_name = file.filename or "unknown"
@@ -192,11 +192,11 @@ def upload_workday_file(
 @router.post("/workday/validate")
 def validate_workday_file(
     file: UploadFile = File(...),
-    db: Session = Depends(auth_utils.get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    db: Session = Depends(auth_service.get_db),
+    current_user=Depends(auth_service.get_current_user),
 ):
     """Dry-run validation — checks file without committing anything."""
-    auth_utils.require_role(current_user, ["route:batch-uploader#workday-uploader"])
+    auth_service.require_role(current_user, ["route:batch-uploader#workday-uploader"])
 
     try:
         content = file.file.read().decode("utf-8")
@@ -246,11 +246,11 @@ def validate_workday_file(
 # ============================================================
 @router.get("/history")
 def get_upload_history(
-    db: Session = Depends(auth_utils.get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    db: Session = Depends(auth_service.get_db),
+    current_user=Depends(auth_service.get_current_user),
 ):
     """Return recent upload logs for the batch uploader."""
-    auth_utils.require_role(current_user, ["route:batch-uploader#history"])
+    auth_service.require_role(current_user, ["route:batch-uploader#history"])
 
     logs = (
         db.query(BatchUploadLog)

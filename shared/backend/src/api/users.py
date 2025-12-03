@@ -4,15 +4,15 @@ from pydantic import BaseModel, EmailStr
 from typing import List, Optional
 from datetime import datetime
 
-from backend.server.model.models_users import (
+from backend.scr.models.models_users import (
     User,
     UserGroup,
     UserPosition,
     UserRole,
     UserCountry,
 )
-from backend.server.utils import auth_utils
-from backend.server.utils.change_logger import log_list_field_changes, log_scalar_change
+from backend.scr.services import auth_service
+from backend.scr.services.changelog_service import log_list_field_changes, log_scalar_change
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -50,7 +50,7 @@ def _resolve_assignables(user: User, db: Session, current_user: User):
     - For the logged-in user (`/me`): Admins see all, others see their explicit assignables
     - For any other user (like new user creation): only show what is already assigned
     """
-    roles = auth_utils.get_user_roles(current_user)
+    roles = auth_service.get_user_roles(current_user)
     is_admin = "admin" in roles
 
     # When resolving for /me
@@ -178,8 +178,8 @@ class UserOut(BaseModel):
 
 @router.get("/me", response_model=UserOut)
 def get_current_user_info(
-    db: Session = Depends(auth_utils.get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    db: Session = Depends(auth_service.get_db),
+    current_user=Depends(auth_service.get_current_user),
 ):
     creator = aliased(User)
     u, creator_obj = (
@@ -221,8 +221,8 @@ def get_current_user_info(
 
 @router.get("/", response_model=List[UserOut])
 def list_users(
-    db: Session = Depends(auth_utils.get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    db: Session = Depends(auth_service.get_db),
+    current_user=Depends(auth_service.get_current_user),
 ):
     creator = aliased(User)
     users = (
@@ -268,11 +268,11 @@ def list_users(
 @router.post("/create", response_model=UserOut)
 def create_user(
     user: UserCreate,
-    db: Session = Depends(auth_utils.get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    db: Session = Depends(auth_service.get_db),
+    current_user=Depends(auth_service.get_current_user),
 ):
     """Create new user with granular changelog."""
-    roles = auth_utils.get_user_roles(current_user)
+    roles = auth_service.get_user_roles(current_user)
     if "admin" not in roles and "route:users#create" not in roles:
         raise HTTPException(status_code=403, detail="Not authorized")
 
@@ -284,7 +284,7 @@ def create_user(
         first_name=user.first_name,
         last_name=user.last_name,
         email=user.email,
-        password_hash=auth_utils.get_password_hash(user.password),
+        password_hash=auth_service.get_password_hash(user.password),
         status=user.status,
         created_at=now,
         created_by=current_user.id,
@@ -370,14 +370,14 @@ def create_user(
 def update_user(
     user_id: int,
     user_update: UserUpdate,
-    db: Session = Depends(auth_utils.get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    db: Session = Depends(auth_service.get_db),
+    current_user=Depends(auth_service.get_current_user),
 ):
     db_user = db.query(User).filter(User.id == user_id).first()
     if not db_user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    roles = auth_utils.get_user_roles(current_user)
+    roles = auth_service.get_user_roles(current_user)
     if "admin" not in roles and "route:users#edit" not in roles:
         raise HTTPException(status_code=403, detail="Not authorized")
 
@@ -399,7 +399,7 @@ def update_user(
             setattr(db_user, field, new_val)
 
     if user_update.password:
-        db_user.password_hash = auth_utils.get_password_hash(user_update.password)
+        db_user.password_hash = auth_service.get_password_hash(user_update.password)
         log_scalar_change(
             db=db,
             actor=current_user,
@@ -475,8 +475,8 @@ def update_user(
 @router.get("/{user_id}", response_model=UserOut)
 def get_user(
     user_id: int,
-    db: Session = Depends(auth_utils.get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    db: Session = Depends(auth_service.get_db),
+    current_user=Depends(auth_service.get_current_user),
 ):
     """Return full user details by ID with effective roles."""
     creator = aliased(User)

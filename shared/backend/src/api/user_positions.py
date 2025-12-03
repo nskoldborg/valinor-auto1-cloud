@@ -3,9 +3,9 @@ from sqlalchemy.orm import Session, joinedload
 from typing import Optional, List
 from datetime import datetime
 
-from backend.server.model.models_users import User, UserPosition, UserGroup
-from backend.server.utils import auth_utils
-from backend.server.utils.change_logger import log_scalar_change, log_list_field_changes
+from backend.scr.models.models_users import User, UserPosition, UserGroup
+from backend.scr.services import auth_service
+from backend.scr.services.changelog_service import log_scalar_change, log_list_field_changes
 
 router = APIRouter(prefix="/positions", tags=["positions"])
 
@@ -16,7 +16,7 @@ router = APIRouter(prefix="/positions", tags=["positions"])
 
 def _require_role(user: User, allowed: List[str]):
     """Ensure the user has at least one of the allowed roles, or is admin."""
-    roles = auth_utils.get_user_roles(user)
+    roles = auth_service.get_user_roles(user)
     if "admin" in roles:
         return
     if not any(role in roles for role in allowed):
@@ -29,8 +29,8 @@ def _require_role(user: User, allowed: List[str]):
 
 @router.get("/", response_model=List[dict])
 def list_positions(
-    db: Session = Depends(auth_utils.get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    db: Session = Depends(auth_service.get_db),
+    current_user=Depends(auth_service.get_current_user),
 ):
     """Return all positions with their associated groups."""
 
@@ -72,8 +72,8 @@ def list_positions(
 @router.get("/{position_id}", response_model=dict)
 def get_position(
     position_id: int,
-    db: Session = Depends(auth_utils.get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    db: Session = Depends(auth_service.get_db),
+    current_user=Depends(auth_service.get_current_user),
 ):
     """Return a single position with its assigned groups."""
     _require_role(current_user, ["route:positions#view"])
@@ -110,8 +110,8 @@ def get_position(
 @router.post("/", response_model=dict)
 def create_position(
     payload: dict,
-    db: Session = Depends(auth_utils.get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    db: Session = Depends(auth_service.get_db),
+    current_user=Depends(auth_service.get_current_user),
 ):
     """Create a new position."""
     _require_role(current_user, ["route:positions#create"])
@@ -177,8 +177,8 @@ def create_position(
 def edit_position(
     position_id: int,
     payload: dict,
-    db: Session = Depends(auth_utils.get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    db: Session = Depends(auth_service.get_db),
+    current_user=Depends(auth_service.get_current_user),
 ):
     """Edit an existing position."""
     _require_role(current_user, ["route:positions#edit"])
@@ -251,8 +251,8 @@ def edit_position(
 @router.delete("/{position_id}", response_model=dict)
 def delete_position(
     position_id: int,
-    db: Session = Depends(auth_utils.get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    db: Session = Depends(auth_service.get_db),
+    current_user=Depends(auth_service.get_current_user),
 ):
     """Delete a position."""
     _require_role(current_user, ["route:admin-actions#delete-position"])
@@ -284,8 +284,8 @@ def delete_position(
 @router.get("/{position_id}/groups", response_model=List[dict])
 def get_position_groups(
     position_id: int,
-    db: Session = Depends(auth_utils.get_db),
-    current_user=Depends(auth_utils.get_current_user),
+    db: Session = Depends(auth_service.get_db),
+    current_user=Depends(auth_service.get_current_user),
 ):
     """Return all groups currently linked to a specific position."""
     _require_role(current_user, ["route:positions#view"])
