@@ -1,0 +1,43 @@
+# ===============================================
+# Standard .gitignore for Monorepo (project_root/.gitignore)
+# ===============================================
+
+# --- Application/Local Artifacts ---
+# Local environment variables
+.env
+.env.local
+.env.secret
+*.log
+Thumbs.db
+
+# --- Python & Backend Artifacts ---
+# Virtual environments
+venv/
+**/venv/
+# Compiled Python files
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyd
+*.pyo
+
+# --- Database/Alembic ---
+# Alembic state file (usually stored inside migrations folder)
+# If Alembic creates a state file at the root, ignore it here:
+# .alembic-state 
+
+# --- Node/Frontend Artifacts ---
+# Node modules directory (should always be ignored)
+node_modules/
+**/node_modules/
+
+# Vite/Build Output
+# Output directories for Frontend build process
+# The actual folder name is often 'dist' or 'build'
+shared/frontend/dist/
+shared/frontend/build/
+
+# IDE and Editor Files
+.idea
+.vscode
+*~

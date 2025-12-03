@@ -1,0 +1,36 @@
+# ===============================================
+# Global .dockerignore for Monorepo (project_root/.dockerignore)
+# ===============================================
+
+# --- General Development/OS Files ---
+.git
+.github
+.vscode
+.idea
+.DS_Store
+*.swp
+.venv
+.env
+*.log
+
+# --- Python Artifacts ---
+# Virtual environment directories
+**/venv
+# Bytecode and build artifacts
+**/__pycache__
+**/*.pyc
+**/*.egg-info
+**/build
+
+# --- Node/Frontend Artifacts (CRITICAL TO EXCLUDE) ---
+# Node dependency folders
+**/node_modules
+# Vite/Webpack/Build output folders
+**/dist
+**/build
+**/out
+
+# --- Alembic/DB Specific Files ---
+# Alembic generates files inside the migrations directory, which should 
+# be copied as source code, but exclude internal artifacts if any.
+# Typically, Alembic directories are kept.
