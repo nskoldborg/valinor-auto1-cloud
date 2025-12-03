@@ -1,10 +1,13 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+import os
 from sqlalchemy import text
 
-from backend.scr.models import base, database
-from backend.scr.services import seed
-from backend.scr.api import (
+# NOTE: Imports adjusted to reflect PYTHONPATH=/app/src set in Dockerfile
+from src.models import base, database
+from src.services import seed
+# Assuming api routers are now correctly placed under src.api
+from src.api import (
     analytics_datasources,
     analytics_queries,
     analytics_resources,
@@ -30,12 +33,15 @@ from backend.scr.api import (
 app = FastAPI(title="Auto1 Backend")
 
 # ✅ CORS setup
-origins = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "http://10.46.0.140:5173",
-    "http://10.46.0.140:8651",  # ✅ external port you’re using in the browser
-]
+# ---------------------------------------------------------------------
+# CRITICAL FIX: Read allowed origins from an environment variable (comma-separated)
+# We default to common local dev ports, using the latest port (8701).
+ALLOWED_ORIGINS_RAW = os.getenv(
+    "ALLOWED_ORIGINS", 
+    "http://localhost:5173,http://localhost:8701" # Updated fallback to use port 8701
+)
+origins = [origin.strip() for origin in ALLOWED_ORIGINS_RAW.split(',')]
+# ---------------------------------------------------------------------
 
 app.add_middleware(
     CORSMiddleware,
