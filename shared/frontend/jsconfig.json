@@ -1,0 +1,8 @@
+{
+  "compilerOptions": {
+    "baseUrl": "./src", // Correctly points to shared/frontend/src/
+    "paths": {
+      "@/*": ["*"]
+    }
+  }
+}

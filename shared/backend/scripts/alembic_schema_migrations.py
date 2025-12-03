@@ -1,3 +1,5 @@
+# shared/backend/scripts/dbSchemaMigrator.py
+
 import subprocess
 import sys
 from datetime import datetime
@@ -17,7 +19,22 @@ def run(cmd):
     if result.returncode != 0:
         sys.exit(result.returncode)
 
-# ... (main function logic) ...
+def main():
+    # Use timestamp in migration message
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    # Priority: CLI arg > CUSTOM_MESSAGE > fallback
+    if len(sys.argv) > 1 and sys.argv[1] != "--dry-run":
+        message = "_".join(sys.argv[1:])
+    elif CUSTOM_MESSAGE:
+        message = CUSTOM_MESSAGE
+    else:
+        message = "auto_migration"
+
+    migration_message = f"{timestamp}_{message}"
+
+    # Detect dry-run
+    dry_run = "--dry-run" in sys.argv
 
     # Step 1: generate migration file
     run([
@@ -40,4 +57,5 @@ def run(cmd):
         ])
         print(f"\n✅ Migration applied: {migration_message}")
 
-# ... (if __name__ == "__main__": main() )
+if __name__ == "__main__":
+    main()

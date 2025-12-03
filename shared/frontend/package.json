@@ -1,5 +1,5 @@
 {
-  "name": "monitoring-frontend",
+  "name": "valinor-frontend",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -10,7 +10,8 @@
     "lint": "npx eslint src --ext .js,.jsx",
     "extract:translations": "node ./scripts/extract_translations.js",
     "update-translations": "node ./scripts/update_translations.js",
-    "watch-translations": "node ./scripts/update_translations.js --watch"
+    "watch-translations": "node ./scripts/update_translations.js --watch",
+    "fix-icons": "node scripts/fix-icons.js"  
   },
   "dependencies": {
     "axios": "^1.6.0",

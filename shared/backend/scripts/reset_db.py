@@ -1,9 +1,14 @@
+# shared/backend/scripts/reset_db.py
+
 import sys, os
 from sqlalchemy import text
 
-from backend.scr.models import Base
-from backend.scr.models.database import engine
-from backend.scr.services.seed_service import seed
+# Corrected Imports (Assumes models and database are in shared/backend/src/models)
+from src.models import Base
+from src.models.database import engine
+# Assuming the seeding function is now in a service module
+from src.services.seed_service import seed 
+
 
 def drop_all_tables_cascade(engine, schema: str):
     """
@@ -12,6 +17,7 @@ def drop_all_tables_cascade(engine, schema: str):
     """
     with engine.connect() as conn:
         print(f"⚠️  Dropping all tables in schema '{schema}' (CASCADE)...")
+        # Ensure schema name is properly quoted
         conn.execute(
             text(f"""
             DO $$
@@ -41,10 +47,10 @@ def ensure_schema_exists(engine, schema: str):
 
 def reset_database():
     """
-    Drops all tables in both 'public' and 'api_load' schemas,
-    recreates them, and runs the seeding routine.
+    Drops all tables in specified schemas, recreates them, and runs seeding.
     """
-    schemas_to_reset = ["public", "api_load"]
+    # NOTE: These schemas must be defined in your alembic.ini and models
+    schemas_to_reset = ["public", "api_load"] 
 
     for schema in schemas_to_reset:
         ensure_schema_exists(engine, schema)
@@ -55,7 +61,8 @@ def reset_database():
     print("✅ All tables created successfully.")
 
     print("\n🌱  Seeding defaults...")
-    seed()
+    # Seed function is expected to handle connecting to the current DB based on the engine
+    seed() 
     print("\n✅  Database reset and seeding completed successfully!\n")
 
 
