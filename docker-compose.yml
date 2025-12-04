@@ -22,7 +22,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
-      - ${VALINOR_NETWORK}
+      - ${VALINOR_NETWORK} # Refers to the name created below
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
@@ -138,5 +138,8 @@ volumes:
   postgres_data:
 
 networks:
-  ${VALINOR_NETWORK}:
+  # CRITICAL FIX: Use the explicit network name 'valinor_net' 
+  # defined in the .env file instead of variable interpolation here.
+  # This avoids the "refers to undefined network" error.
+  valinor_net:
     driver: bridge
