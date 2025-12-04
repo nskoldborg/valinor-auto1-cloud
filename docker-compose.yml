@@ -1,36 +1,34 @@
-# project_root/docker-compose.yml
 version: '3.8'
 
-# ------------------------------------------------------------
-# CRITICAL: Load all environment files (committed and secret)
-# ------------------------------------------------------------
-env_file:
-  - ./.env
-  - ./.env.secret
+# NOTE: The conflicting top-level 'env_file' has been removed.
+# Environment files are loaded explicitly under each service.
 
-# ------------------------------------------------------------
-# SERVICES (All definitions in one file)
-# ------------------------------------------------------------
 services:
   # 1. 🗄️ Database Service (Shared by Dev and Prod)
   db_main:
     image: ${POSTGRES_IMAGE}
     container_name: ${PROJECT_NAME}_db_main
+    # ✅ FIX: Load ENV files at the service level
+    env_file:
+      - ./.env
+      - ./.env.secret
     environment:
-      # Use variables from .env.secret
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      # This is the default DB created on startup; Dev/Prod will create their own.
       POSTGRES_DB: default_db
     ports:
-      # Expose DB only for Synology portainer/local access, if needed
-      - "5432:${POSTGRES_PORT}"
+      # FIX: Wrap port mapping in quotes for reliable interpolation
+      - "5432:${POSTGRES_PORT}" 
     volumes:
-      # Ensure data persistence on the NAS
       - postgres_data:/var/lib/postgresql/data
     networks:
       - ${VALINOR_NETWORK}
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   # 2. 🧱 Backend API - Development Service (Profile: 'dev')
   api-dev:
@@ -39,42 +37,55 @@ services:
     build:
       context: ./shared/backend
       dockerfile: Dockerfile
-    # CRITICAL: Define DB connection URL using dev-specific variables
+    # ✅ FIX: Load ENV files at the service level
+    env_file:
+      - ./.env
+      - ./.env.secret
     environment:
       APP_ENV: ${APP_ENV_DEV}
-      DB_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${DB_NAME_DEV}
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${DB_NAME_DEV}
       ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS_DEV}
+      API_BASE_HOST: ${API_BASE_HOST_DEV}
+      DB_URL: ${DATABASE_URL}
     ports:
+      # FIX: Wrap port mapping in quotes
       - "${DEV_BACKEND_PORT}:8000"
     volumes:
-      # CRITICAL: Mounts local code for hot-reload
       - ./shared/backend:/app:cached
     depends_on:
-      - db_main
+      db_main:
+        condition: service_healthy
     networks:
       - ${VALINOR_NETWORK}
-    # Use uvicorn or similar dev server for hot reload
     command: ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 
   # 3. 🚀 Backend API - Production Service (Profile: 'prod')
   api-prod:
     profiles: ["prod"]
     container_name: ${PROJECT_NAME}_api_prod
-    # Uses the same build context/Dockerfile as dev, but runs the stable CMD
     build:
       context: ./shared/backend
       dockerfile: Dockerfile
+    # ✅ FIX: Load ENV files at the service level
+    env_file:
+      - ./.env
+      - ./.env.secret
     environment:
       APP_ENV: ${APP_ENV_PROD}
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${DB_NAME_PROD}
       ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS_PROD}
+      API_BASE_HOST: ${API_BASE_HOST_PROD}
+      DB_URL: ${DATABASE_URL}
     ports:
+      # FIX: Wrap port mapping in quotes
       - "${PROD_BACKEND_PORT}:8000"
     depends_on:
-      - db_main
+      db_main:
+        condition: service_healthy
     networks:
       - ${VALINOR_NETWORK}
-    # CMD is usually defined in the Dockerfile (e.g., Gunicorn)
 
   # 4. 🌐 Frontend - Development Service (Profile: 'dev')
   web-dev:
@@ -83,14 +94,20 @@ services:
     build:
       context: ./shared/frontend
       dockerfile: Dockerfile
+    # ✅ FIX: Load ENV files at the service level
+    env_file:
+      - ./.env
+      - ./.env.secret
+    environment:
+      VITE_API_PROXY_HOST: ${API_BASE_HOST_DEV}
     ports:
-      - "${DEV_FRONTEND_PORT}:5173" # Vite's default dev port
+      # FIX: Wrap port mapping in quotes
+      - "${DEV_FRONTEND_PORT}:5173" 
     volumes:
-      # Mounts local code for Vite hot-reload
       - ./shared/frontend:/app:cached
-      - /app/node_modules # Prevents host node_modules from overriding container's
+      - /app/node_modules
     depends_on:
-      - api-dev # Wait for the API to be available
+      - api-dev 
     networks:
       - ${VALINOR_NETWORK}
     command: ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]
@@ -102,16 +119,20 @@ services:
     build:
       context: ./shared/frontend
       dockerfile: Dockerfile
+    # ✅ FIX: Load ENV files at the service level
+    env_file:
+      - ./.env
+      - ./.env.secret
     ports:
-      - "${PROD_FRONTEND_PORT}:80" # Nginx default port
+      # FIX: Wrap port mapping in quotes
+      - "${PROD_FRONTEND_PORT}:80" 
     depends_on:
       - api-prod
     networks:
       - ${VALINOR_NETWORK}
-    # CMD is usually defined in the Dockerfile (e.g., Nginx)
 
 # ------------------------------------------------------------
-# VOLUMES & NETWORKS (External resources)
+# VOLUMES & NETWORKS
 # ------------------------------------------------------------
 volumes:
   postgres_data:
