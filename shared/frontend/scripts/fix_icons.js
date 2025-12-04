@@ -24,6 +24,7 @@ function walkDir(dir) {
     const filePath = path.join(dir, file);
     const stat = fs.statSync(filePath);
     
+    // Recurse into directories, skipping node_modules
     if (stat.isDirectory() && !filePath.includes('node_modules')) {
       walkDir(filePath);
     } else if (file.endsWith('.jsx') || file.endsWith('.js')) {
@@ -33,5 +34,6 @@ function walkDir(dir) {
 }
 
 console.log('🔧 Fixing icon props...');
-walkDir('./frontend/src');
+// CRITICAL FIX: The execution context is shared/frontend, so the target source is just ./src
+walkDir('./src'); 
 console.log('✨ Done!');
