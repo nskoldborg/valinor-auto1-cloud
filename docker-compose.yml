@@ -1,13 +1,12 @@
 version: '3.8'
 
-# NOTE: The conflicting top-level 'env_file' has been removed.
-# Environment files are loaded explicitly under each service.
+# NOTE: The 'profiles' directive has been removed from all services to ensure
+# every service is deployed by default in Portainer/Synology stacks, resolving
+# the issue where only 'db_main' was running. Dev/Prod are isolated by ports.
 
 services:
   # 1. 🗄️ Database Service (Shared by Dev and Prod)
   db_main:
-    # ✅ FIX: Assign 'all' profile so it runs when deploying the combined stack
-    profiles: ["all"]
     image: ${POSTGRES_IMAGE}
     container_name: ${PROJECT_NAME}_db_main
     # ✅ FIX: Load ENV files at the service level
@@ -18,8 +17,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: default_db
-    # ❌ FIX: REMOVED PORT MAPPING to avoid 'address already in use' conflict on host port 5432.
-    # The DB is accessible internally via the Docker network (db_main:5432).
+    # ❌ REMOVED PORT MAPPING to avoid 'address already in use' conflict on host port 5432.
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -31,10 +29,8 @@ services:
       timeout: 5s
       retries: 5
 
-  # 2. 🧱 Backend API - Development Service (Profile: 'dev')
+  # 2. 🧱 Backend API - Development Service
   api-dev:
-    # ✅ FIX: Assign 'all' profile to deploy alongside Prod
-    profiles: ["dev", "all"]
     container_name: ${PROJECT_NAME}_api_dev
     build:
       context: ./shared/backend
@@ -62,10 +58,8 @@ services:
       - ${VALINOR_NETWORK}
     command: ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 
-  # 3. 🚀 Backend API - Production Service (Profile: 'prod')
+  # 3. 🚀 Backend API - Production Service
   api-prod:
-    # ✅ FIX: Assign 'all' profile to deploy alongside Dev
-    profiles: ["prod", "all"]
     container_name: ${PROJECT_NAME}_api_prod
     build:
       context: ./shared/backend
@@ -90,10 +84,8 @@ services:
     networks:
       - ${VALINOR_NETWORK}
 
-  # 4. 🌐 Frontend - Development Service (Profile: 'dev')
+  # 4. 🌐 Frontend - Development Service
   web-dev:
-    # ✅ FIX: Assign 'all' profile to deploy alongside Prod
-    profiles: ["dev", "all"]
     container_name: ${PROJECT_NAME}_web_dev
     build:
       context: ./shared/frontend
@@ -116,10 +108,8 @@ services:
       - ${VALINOR_NETWORK}
     command: ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]
 
-  # 5. 🚀 Frontend - Production Service (Profile: 'prod')
+  # 5. 🚀 Frontend - Production Service
   web-prod:
-    # ✅ FIX: Assign 'all' profile to deploy alongside Dev
-    profiles: ["prod", "all"]
     container_name: ${PROJECT_NAME}_web_prod
     build:
       context: ./shared/frontend
