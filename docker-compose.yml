@@ -6,6 +6,8 @@ version: '3.8'
 services:
   # 1. 🗄️ Database Service (Shared by Dev and Prod)
   db_main:
+    # ✅ FIX: Assign 'all' profile so it runs when deploying the combined stack
+    profiles: ["all"]
     image: ${POSTGRES_IMAGE}
     container_name: ${PROJECT_NAME}_db_main
     # ✅ FIX: Load ENV files at the service level
@@ -31,7 +33,8 @@ services:
 
   # 2. 🧱 Backend API - Development Service (Profile: 'dev')
   api-dev:
-    profiles: ["dev"]
+    # ✅ FIX: Assign 'all' profile to deploy alongside Prod
+    profiles: ["dev", "all"]
     container_name: ${PROJECT_NAME}_api_dev
     build:
       context: ./shared/backend
@@ -61,7 +64,8 @@ services:
 
   # 3. 🚀 Backend API - Production Service (Profile: 'prod')
   api-prod:
-    profiles: ["prod"]
+    # ✅ FIX: Assign 'all' profile to deploy alongside Dev
+    profiles: ["prod", "all"]
     container_name: ${PROJECT_NAME}_api_prod
     build:
       context: ./shared/backend
@@ -72,7 +76,7 @@ services:
       - ./.env.secret
     environment:
       APP_ENV: ${APP_ENV_PROD}
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTS_HOST}:${POSTGRES_PORT}/${DB_NAME_PROD}
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${DB_NAME_PROD}
       ENCRYPTION_KEY: ${ENCRYPTION_KEY}
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS_PROD}
       API_BASE_HOST: ${API_BASE_HOST_PROD}
@@ -88,7 +92,8 @@ services:
 
   # 4. 🌐 Frontend - Development Service (Profile: 'dev')
   web-dev:
-    profiles: ["dev"]
+    # ✅ FIX: Assign 'all' profile to deploy alongside Prod
+    profiles: ["dev", "all"]
     container_name: ${PROJECT_NAME}_web_dev
     build:
       context: ./shared/frontend
@@ -113,7 +118,8 @@ services:
 
   # 5. 🚀 Frontend - Production Service (Profile: 'prod')
   web-prod:
-    profiles: ["prod"]
+    # ✅ FIX: Assign 'all' profile to deploy alongside Dev
+    profiles: ["prod", "all"]
     container_name: ${PROJECT_NAME}_web_prod
     build:
       context: ./shared/frontend
